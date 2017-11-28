@@ -89,6 +89,10 @@ sudo mysql -e  "GRANT ALL ON isudb.* TO local_user@localhost IDENTIFIED BY 'pass
 
 ### nginx
 
+`files/cco.nginx.conf` に nginx の設定ファイルがあります。
+`root /home/isucon/webapp/public;` になっている部分を `root $HOME/cco/webapp/public;`
+(`$HOME` の部分はホームディレクトリに置き換える)に書き換えてください。
+
 ```
 sudo cp ~/cco/files/cco.nginx.conf /etc/nginx/sites-available
 cd /etc/nginx/sites-enabled
@@ -119,7 +123,9 @@ ISU_DB_HOST=localhost ISU_DB_PORT=3306 ISU_DB_USER=local_user ISU_DB_PASSWORD=pa
 
 これで localhost:5000 でGo版のアプリが動きます。
 
-systemd を利用して起動するには /files 配下のファイルを参照してください。
+systemd を利用して起動する場合は、 `files/` 配下にある各 service
+ファイルを参照してください。アプリのあるパス、環境変数の設定、
+User, Group などは適宜修正する必要があります。
 
 
 ### ベンチマーカー

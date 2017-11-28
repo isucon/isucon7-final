@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8"/>
+    <title>Isu Constructor Online</title>
+  </head>
+  <body>
+    <p>
+      <label>部屋名: <input id="go_text" type="text"/></label>
+      <input id="go_button" type="button" value="GO"/>
+    </p>
+    <table border="1" cellpadding="3">
+      <tr><th>部屋名</th><td id="t_name"></td></tr>
+      <tr><th>椅子の数</th><td id="t_x" align="right">0 脚</td></tr>
+      <tr><th>生産速度</th><td id="t_v" align="right">0 脚毎秒</td></tr>
+    </table>
+    <p>
+      <input id="game_button1" type="button" value="1脚作成" disabled/>
+    </p>
+    <p>
+      <input id="game_button2" type="button" value="5000兆脚 欲しい!" disabled/>
+    </p>
+    <p>
+      <input id="game_text3" type="text" placeholder="正整数"><input id="game_button3" type="button" value="脚作成" disabled/>
+    </p>
+    <p>
+      <input id="game_text4_1" type="text" placeholder="正整数">×10^<input id="game_text4_2" type="text" placeholder="非負整数"><input id="game_button4" type="button" value="脚作成" disabled/>
+    </p>
+    <p id="message"></p>
+    <table border="1" cellpadding="3">
+      <tr><th>送信中</th><td id="t_sending" align="right"></td></tr>
+      <tr><th>反映待</th><td id="t_waiting" align="right"></td></tr>
+    </table>
+    <br>
+    <table border="1" cellpadding="3">
+      <tbody id="b_table">
+        <tr><th>装置名</th><th>個数</th><th></th><th>価格</th><th>生産速度</th><th></th></tr>
+      </tbody>
+    </table>
+    <script src="game.js"></script>
+    <script src="debugview.js"></script>
+  </body>
+</html>

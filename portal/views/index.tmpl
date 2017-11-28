@@ -1,0 +1,130 @@
+{{define "content"}}
+
+{{if .Message}}
+<p class="alert alert-danger">{{.Message}}</p>
+{{end}}
+
+{{if .Info}}
+<p class="alert alert-info">{{.Info}}</p>
+{{end}}
+
+{{if .Team}}
+<h2>ベンチマークキュー</h2>
+<p>
+{{range .Jobs}}
+<span class="badge {{if (eq .Status "running")}}badge-success{{else}}badge-default{{end}}">{{.TeamID}}{{if (eq $.Team.ID .TeamID)}}*{{end}}</span>
+{{end}}
+</p>
+
+<form action="/queue" method="POST">
+  {{if eq .Team.ID 9999 }}
+    <p>管理者用機能</p>
+    <label>IPアドレス </label><input type="text" name="ipaddr" value="{{.Team.IPAddr}}"><br>
+    <input class="btn btn-primary" type="submit" value="Enqueue">
+    <input class="btn btn-danger"  type="submit" name="cancel" value="Cancel">
+  {{else if .Team.IPAddr}}
+    <p>登録されているサーバ: {{.Team.IPAddr}}</p>
+    <div class="form-group">
+      <input class="btn btn-primary" type="submit" value="Enqueue">
+      <input class="btn btn-danger"  type="submit" name="cancel" value="Cancel">
+    </div>
+  {{else}}
+  <p class="alert alert-warning">ページ下部の「運営向け情報」から負荷走行を実行するサーバを登録してください。</p>
+  <div class="form-group">
+    <input class="btn btn-primary" type="submit" value="Enqueue" disabled>
+  </div>
+  {{end}}
+</form>
+{{end}}
+
+{{if .Team}}
+<h2>運営向け情報</h2>
+<p>負荷走行を実行するサーバを選択してください。この設定は競技終了後に行われる追試でも使用されます。</p>
+
+<form action="/team" method="POST">
+<table class="table table-sm">
+    <tr>
+      <th>Name</th>
+      <th>Local IP</th>
+      <th>Global IP</th>
+    </tr>
+  {{range .TeamServers}}
+    <tr {{if .Selected}}class="table-success"{{end}}>
+      <td>
+        <div class="form-check"><label class="form-check-label">
+          <input class="form-check-input" type="checkbox" name="servers[]" value="{{.ID}}"{{if .Selected}} checked="checked"{{end}}>&nbsp;&nbsp;{{.Name}}
+        </label></div>
+      </td>
+      <td>{{.LocalIP}}</td>
+      <td>{{.GlobalIP}}</td>
+    </tr>
+  {{end}}
+</table>
+  <input class="btn btn-primary" type="submit" value="設定を保存">
+</form>
+{{end}}
+
+
+{{if .LatestResult}}
+<h2>自チームの最新結果</h2>
+<table class="table">
+  <tr>
+    <th>Time</th><td>{{.LatestResult.At}}</td>
+  </tr>
+  <tr>
+    <th>Message</th><td>{{.LatestResult.Bench.Message}}</td>
+  </tr>
+  <tr>
+    <th>Score</th><td>{{.LatestResult.Bench.Score}}</td>
+  </tr>
+  <tr>
+    <th>Best</th><td>{{if .Score}}{{.Score.Best}}{{else}}-{{end}}</td>
+  </tr>
+  <tr>
+    <th>LoadLevel</th><td>{{.LatestResult.Bench.LoadLevel}}</td>
+  </tr>
+  <tr>
+    <th>Log</th><td><pre style="font-size:small">{{.LatestResult.Bench.Logs | joinslice}}</pre></td>
+  </tr>
+</table>
+{{end}}
+
+<h2>リーダーボード</h2>
+{{if .RankingIsFixed}}
+  <p class="alert alert-warning">競技残り1時間を切りました。自チームを除き、スコアの表示は固定されています</p>
+{{end}}
+
+{{if .PlotLines}}
+<div id="plot" style="height: 600px;"></div>
+<script>
+Highcharts.setOptions({useUTC: false, chart: { height: 600 } });
+new Chartkick.LineChart("plot", {{.PlotLines}}, {min: 0});
+</script>
+{{end}}
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Team</th>
+      <th>Score</th>
+      <th>Time</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range $score := .Ranking}}
+      {{if (ne $score.Team.ID 9999) }}
+        <tr {{if $.Team}}{{if (eq $score.Team.ID $.Team.ID)}}class="warning"{{end}}{{end}}>
+          {{if eq $score.Team.Category "students"}}
+            <td>{{$score.Team.Name}} [学生]</td>
+          {{else}}
+            <td>{{$score.Team.Name}}</td>
+          {{end}}
+          <td>{{$score.Latest}}</td>
+          <td>{{$score.At}}</td>
+        </tr>
+      {{end}}
+    {{end}}
+  </tbody>
+</table>
+
+{{end}}

@@ -1,0 +1,69 @@
+{{define "content"}}
+  <h2>{{len .Teams}}チーム / {{.CntTeamServer}}サーバー</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Team</th>
+        <th>Group</th>
+        <th>Password</th>
+        <th>Category</th>
+        <th>ServerID</th>
+        <th>ServerName</th>
+        <th>ServerLocalIP</th>
+        <th>ServerGlobalIP</th>
+        <th>ServerGroup</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range $i, $t := .Teams}}
+        <tr>
+          {{$size := len $t.Servers}}
+          {{if lt $size 1}}{{$size := 1}}{{end}}
+          <td rowspan="{{$size}}">{{$t.Name}}({{$t.ID}})</td>
+          {{if eq (len $t.Servers) 4 }}
+            <td rowspan="{{$size}}">{{$t.Group}}</td>
+          {{else}}
+            <td rowspan="{{$size}}"  bgcolor="#FF0000">{{$t.Group}}</td>
+          {{end}}
+          <td rowspan="{{$size}}">{{$t.Password}}</td>
+          <td rowspan="{{$size}}">{{$t.Category}}</td>
+          {{range $i, $sv := $t.Servers}}
+            {{if ne $i 0}}<tr>{{end}}
+            <td>{{$sv.ID}}</td>
+            <td>{{$sv.Name}}</td>
+            <td>{{$sv.LocalIP}}</td>
+            <td>{{$sv.GlobalIP}}</td>
+            {{if eq $sv.Group $t.Group }}
+              <td>{{$sv.Group}}</td>
+            {{else}}
+              <td bgcolor="#FF0000">{{$sv.Group}}</td>
+            {{end}}
+            </tr>
+          {{end}}
+        </tr>
+      {{end}}
+    </tbody>
+  </table>
+
+  <h2>チーム未割り当てサーバ({{len .Servers}})</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>ServerID</th>
+        <th>ServerName</th>
+        <th>ServerLocalIP</th>
+        <th>ServerGlobalIP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range $i, $sv := .Servers}}
+        <tr>
+        <td>{{$sv.ID}}</td>
+        <td>{{$sv.Name}}</td>
+        <td>{{$sv.LocalIP}}</td>
+        <td>{{$sv.GlobalIP}}</td>
+        </tr>
+      {{end}}
+    </tbody>
+  </table>
+{{end}}

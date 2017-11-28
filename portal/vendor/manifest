@@ -1,0 +1,76 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "cloud.google.com/go/compute/metadata",
+			"repository": "https://code.googlesource.com/gocloud",
+			"revision": "aeeacb092ec71c83668e4828857289d89c34b610",
+			"branch": "master",
+			"path": "/compute/metadata"
+		},
+		{
+			"importpath": "github.com/braintree/manners",
+			"repository": "https://github.com/braintree/manners",
+			"revision": "82a8879fc5fd0381fa8b2d8033b19bf255252088",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/go-sql-driver/mysql",
+			"repository": "https://github.com/go-sql-driver/mysql",
+			"revision": "7785c74297136c027fdf2fd6f8931c0e19be8aa7",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/golang/gddo/httputil",
+			"repository": "https://github.com/golang/gddo",
+			"revision": "ac67b55316232b5675c71cf9e100166714ee8e87",
+			"branch": "master",
+			"path": "/httputil"
+		},
+		{
+			"importpath": "github.com/gorilla/context",
+			"repository": "https://github.com/gorilla/context",
+			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/gorilla/securecookie",
+			"repository": "https://github.com/gorilla/securecookie",
+			"revision": "e59506cc896acb7f7bf732d4fdf5e25f7ccd8983",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/gorilla/sessions",
+			"repository": "https://github.com/gorilla/sessions",
+			"revision": "b61c93cb7f67533c8bfbb5ea450efc07e5833c5e",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/lestrrat/go-server-starter/listener",
+			"repository": "https://github.com/lestrrat/go-server-starter",
+			"revision": "f9cb0b066498d26a90fd918fe265adbb0ea02bcf",
+			"branch": "master",
+			"path": "/listener"
+		},
+		{
+			"importpath": "github.com/pkg/errors",
+			"repository": "https://github.com/pkg/errors",
+			"revision": "2b3a18b5f0fb6b4f9190549597d3f962c02bc5eb",
+			"branch": "master"
+		},
+		{
+			"importpath": "golang.org/x/net/context",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "0a9397675ba34b2845f758fe3cd68828369c6517",
+			"branch": "master",
+			"path": "/context"
+		},
+		{
+			"importpath": "golang.org/x/sync/singleflight",
+			"repository": "https://go.googlesource.com/sync",
+			"revision": "fd80eb99c8f653c847d294a001bdf2a3a6f768f5",
+			"branch": "master",
+			"path": "/singleflight"
+		}
+	]
+}

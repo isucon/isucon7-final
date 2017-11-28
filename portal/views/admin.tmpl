@@ -1,0 +1,65 @@
+{{define "content"}}
+
+  <h2>状態</h2>
+  <table class="table table-striped">
+    <tbody>
+      {{range .KeyValues}}
+        <td>{{.Key}}</td>
+        <td>{{.Value}}</td>
+      {{end}}
+    </tbody>
+  </table>
+
+  <h2>コンテスト状態変更</h2>
+  <p>コンテストの状態を変更します。慎重に操作してください。</p>
+  <form action="./admin" method="POST">
+    <div class="form-group">
+      <select class="form-control" name="status">
+        <option value="notstarted">開始前(NotStarted)</option>
+        <option value="started">開催中(Started)</option>
+        <option value="ended">終了(Ended)</option>
+      </select>
+      <div class="form-check">
+        <label class="form-check-label">
+          <input type="checkbox" class="form-check-input" name="confirm" value="yes"> 変更します
+        </label>
+      </div>
+    </div>
+    <input class="btn btn-primary" type="submit" value="更新">
+  </form>
+
+  <h2>Info表示</h2>
+  <p>サイト上部に表示するメッセージ設定できます。空文字で表示なしになります。</p>
+  {{if .Info}}
+  <p class="alert alert-info">{{.Info}}</p>
+  {{end}}
+  <form action="./admin" method="POST">
+    <div class="form-group">
+      <input type="text" class="form-control" name="info">
+    </div>
+    <input class="btn btn-primary" type="submit" value="更新">
+  </form>
+
+  <h2>ベンチマークノード</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>IP Addr</th>
+        <th>State</th>
+        <th>LastAccess</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range $item := .Nodes}}
+      <tr>
+          <td>{{$item.Name}}({{$item.Group}})</td>
+          <td>{{$item.IPAddr}}</td>
+          <td>{{$item.State}}</td>
+          <td>{{$item.LastAccess | since}} ago</td>
+        </tr>
+      {{end}}
+    </tbody>
+  </table>
+
+{{end}}

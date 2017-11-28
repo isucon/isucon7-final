@@ -1,0 +1,23 @@
+{
+  "name": "isu7final",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "mocha"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "^4.0.1"
+  },
+  "dependencies": {
+    "bigint": "github:kdawes/node-bigint",
+    "koa": "^2.4.1",
+    "koa-route": "^3.2.0",
+    "koa-static": "^4.0.1",
+    "koa-websocket": "^4.1.0",
+    "mysql2": "^1.5.0"
+  }
+}

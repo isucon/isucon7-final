@@ -1,0 +1,15 @@
+[Unit]
+Description = isucon7final main application in perl
+
+[Service]
+WorkingDirectory=/home/isucon/webapp/perl
+EnvironmentFile=/home/isucon/env.sh
+ExecStart = /home/isucon/local/perl/bin/carton exec hypnotoad -f /home/isucon/webapp/perl/main.pl
+
+Restart   = always
+Type      = simple
+User      = isucon
+Group     = isucon
+
+[Install]
+WantedBy = multi-user.target

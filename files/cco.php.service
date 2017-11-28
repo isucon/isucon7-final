@@ -1,0 +1,15 @@
+[Unit]
+Description = isucon7final main application in php
+
+[Service]
+WorkingDirectory=/home/isucon/webapp/php/
+EnvironmentFile=/home/isucon/env.sh
+ExecStart = /home/isucon/local/php/bin/php /home/isucon/webapp/php/main.php
+
+Restart   = always
+Type      = simple
+User      = isucon
+Group     = isucon
+
+[Install]
+WantedBy = multi-user.target

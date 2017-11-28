@@ -1,0 +1,15 @@
+[Unit]
+Description = isucon7final main application in python
+
+[Service]
+WorkingDirectory=/home/isucon/webapp/python/
+EnvironmentFile=/home/isucon/env.sh
+ExecStart = /home/isucon/local/python/bin/python /home/isucon/webapp/python/app.py
+
+Restart   = always
+Type      = simple
+User      = isucon
+Group     = isucon
+
+[Install]
+WantedBy = multi-user.target

@@ -1,0 +1,63 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    backports (3.10.3)
+    concurrent-ruby (1.0.5)
+    concurrent-ruby-edge (0.3.1)
+      concurrent-ruby (= 1.0.5)
+    diff-lcs (1.3)
+    eventmachine (1.2.5)
+    faye-websocket (0.10.7)
+      eventmachine (>= 0.12.0)
+      websocket-driver (>= 0.5.1)
+    multi_json (1.12.2)
+    mustermann (1.0.1)
+    mysql2 (0.4.10)
+    puma (3.10.0)
+    rack (2.0.3)
+    rack-protection (2.0.0)
+      rack
+    rspec (3.7.0)
+      rspec-core (~> 3.7.0)
+      rspec-expectations (~> 3.7.0)
+      rspec-mocks (~> 3.7.0)
+    rspec-core (3.7.0)
+      rspec-support (~> 3.7.0)
+    rspec-expectations (3.7.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.7.0)
+    rspec-mocks (3.7.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.7.0)
+    rspec-support (3.7.0)
+    sinatra (2.0.0)
+      mustermann (~> 1.0)
+      rack (~> 2.0)
+      rack-protection (= 2.0.0)
+      tilt (~> 2.0)
+    sinatra-contrib (2.0.0)
+      backports (>= 2.0)
+      multi_json
+      mustermann (~> 1.0)
+      rack-protection (= 2.0.0)
+      sinatra (= 2.0.0)
+      tilt (>= 1.3, < 3)
+    tilt (2.0.8)
+    websocket-driver (0.7.0)
+      websocket-extensions (>= 0.1.0)
+    websocket-extensions (0.1.3)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  concurrent-ruby-edge
+  faye-websocket
+  mysql2
+  puma
+  rspec
+  sinatra
+  sinatra-contrib
+
+BUNDLED WITH
+   1.15.4

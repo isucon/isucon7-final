@@ -1,0 +1,16 @@
+[Unit]
+Description = isucon7 benchmark application
+
+[Service]
+LimitNOFILE=20480
+WorkingDirectory=/home/ubuntu/bench
+EnvironmentFile=/home/ubuntu/env.sh
+ExecStart=/home/ubuntu/bench/bench -workermode -portal https://portal-dev.isu.k0y.org
+
+Restart   = always
+Type      = simple
+User      = ubuntu
+Group     = ubuntu
+
+[Install]
+WantedBy = multi-user.target

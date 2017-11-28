@@ -1,0 +1,6 @@
+bin
+pkg
+src/portal/bindata.go
+vendor/pkg
+vendor/src
+*~

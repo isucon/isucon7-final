@@ -1,0 +1,32 @@
+{{define "content"}}
+
+<table class="table table-striped table-bordered">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Team</th>
+      <th>Status</th>
+      <th>IP addr</th>
+      <th>Bench node</th>
+      <th>Result</th>
+      <th>Log</th>
+      <th>Time</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range $item := .Items}}
+    <tr>
+      <td>{{$item.ID}}</td>
+      <td>{{$item.TeamName}} ({{$item.TeamID}} {{$item.Group}})</td>
+      <td>{{$item.Status}}</td>
+      <td>{{$item.IPAddr}}</td>
+      <td>{{$item.BenchNode}}</td>
+      <td>{{$item.Result}} <a href="./result?id={{$item.ID}}">>raw</a></td>
+      <td>{{$item.Log}} <a href="./log?id={{$item.ID}}">>raw</a></td>
+      <td>{{$item.Time}}</td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+
+{{end}}

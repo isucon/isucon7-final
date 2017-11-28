@@ -1,0 +1,15 @@
+[Unit]
+Description = isucon7final main application in golang
+
+[Service]
+WorkingDirectory=/home/isucon/webapp/go/
+EnvironmentFile=/home/isucon/env.sh
+ExecStart = /home/isucon/webapp/go/app
+
+Restart   = always
+Type      = simple
+User      = isucon
+Group     = isucon
+
+[Install]
+WantedBy = multi-user.target

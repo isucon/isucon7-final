@@ -1,0 +1,43 @@
+{{block "root" .}}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Isu7f::Portal</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link href="/static/main.css" rel="stylesheet" type="text/css" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.0.1/highcharts.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chartkick/2.2.4/chartkick.min.js"></script>
+</head>
+<body>
+<div class="container">
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <span class="navbar-brand"><a href="/">Isu7f::Portal</a></span>
+    </div>
+    <div class="collapse navbar-collapse">
+      {{if .Team}}
+      <p class="navbar-text navbar-right">Hello, {{.Team.Name}} ({{.Team.ID}})</p>
+      {{else}}
+      <p class="navbar-text navbar-right"><a href="/login">Login</a></p>
+      {{end}}
+    </div>
+  </div>
+</nav>
+<div class="container">
+  {{if contestEnded}}
+    <p class="alert alert-info">本選は終了しました！</p>
+  {{end}}
+</div>
+{{template "content" .}}
+</div>
+
+<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+</body>
+</html>
+{{end}}

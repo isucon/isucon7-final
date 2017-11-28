@@ -1,0 +1,36 @@
+  body div.container {
+    border-left: #c2c5c7 solid 1px;
+    border-right: #c2c5c7 solid 1px;
+    border-bottom: #c2c5c7 solid 1px;
+    padding: 0px;
+  }
+
+  nav.navbar-default {
+    padding: 25px 30px;
+    background-color: #2f3843;
+    font-size: 29px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-decoration: none;
+    color: #fff;
+    line-height: 1.3;
+    text-shadow: 1px 1px 0 #000;
+  }
+
+  .navbar-brand a {
+    color: white;
+  }
+
+  h2 {
+    padding: 15px 30px;
+    background: #ebeff1;
+  }
+
+  p {
+    padding-left: 1em;
+  }
+
+  form {
+    padding-left: 1em;
+  }
+

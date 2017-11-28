@@ -1,0 +1,13 @@
+[Unit]
+Description = isucon7 portal application
+
+[Service]
+ExecStart = /home/ubuntu/portal/bin/portal -database-dsn ubuntu:ubuntu@/isu7fportal_day1
+
+Restart   = always
+Type      = simple
+User      = ubuntu
+Group     = ubuntu
+
+[Install]
+WantedBy = multi-user.target

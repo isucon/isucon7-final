@@ -127,6 +127,8 @@ def calc_status(current_time: int, mitems: dict, addings: list, buyings: list):
         else:
             buying_at[b.time].append(b)
 
+    waiting_on_sale = []
+
     for item_id, m in mitems.items():
         item_power0[item_id] = int2exp(item_power[item_id])
         item_built0[item_id] = item_built[item_id]
@@ -135,6 +137,12 @@ def calc_status(current_time: int, mitems: dict, addings: list, buyings: list):
         if total_milli_isu >= price*1000:
             # 0 は 時刻 currentTime で購入可能であることを表す
             item_on_sale[item_id] = 0
+        else:
+            # on_sale 計算のための sale 待ちリスト
+            waiting_on_sale.append((price*1000, item_id))
+
+    # price が安い順にソートしておく
+    waiting_on_sale.sort()
 
     # current_time の状態
     schedule = [Schedule(current_time, int2exp(total_milli_isu), int2exp(total_power))]
@@ -172,11 +180,13 @@ def calc_status(current_time: int, mitems: dict, addings: list, buyings: list):
             )
 
         # 時刻 t で購入可能になったアイテムを記録する
-        for id in mitems:
-            if id in item_on_sale:
-                continue
-            if total_milli_isu >= item_price[id] * 1000:
-                item_on_sale[id] = t
+        bought = 0
+        for i, (price, item_id) in enumerate(waiting_on_sale, 1):
+            if price > total_milli_isu:
+                break
+            item_on_sale[item_id] = t
+            bought = i
+        del waiting_on_sale[:bought]
 
     gs_addings = list(adding_at.values())
 

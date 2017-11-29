@@ -53,13 +53,20 @@ def initialize():
         conn.close()
 
 
+from functools import lru_cache
+
+@lru_cache(100000)
+def _calc_item_status(a, b, c, d, count):
+    return (c * count + 1) * (d ** (a * count + b))
+
+
 def calc_item_power(m: dict, count : int) -> int:
     """アイテムマスタ m から count 個目のそのアイテムの生産力を計算する"""
     a = m['power1']
     b = m['power2']
     c = m['power3']
     d = m['power4']
-    return (c * count + 1) * (d ** (a * count + b))
+    return _calc_item_status(a, b, c, d, count)
 
 
 def calc_item_price(m: dict, count : int) -> int:
@@ -68,7 +75,7 @@ def calc_item_price(m: dict, count : int) -> int:
     b = m['price2']
     c = m['price3']
     d = m['price4']
-    return (c * count + 1) * (d ** (a * count + b))
+    return _calc_item_status(a, b, c, d, count)
 
 
 # JSON中で利用する10進指数表記

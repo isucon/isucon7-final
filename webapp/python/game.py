@@ -28,6 +28,7 @@ class Room:
         self.status = None
         self.addings = []
         self.buyings = []
+        self.total_added = 0
 
 
 _rooms = {}  # TODO: 永続化
@@ -112,9 +113,9 @@ def int2exp(x: int) -> (int, int):
     return (int(s[:15]), len(s)-15)
 
 
-def calc_status(current_time: int, mitems: dict, addings: list, buyings: list):
+def calc_status(current_time: int, mitems: dict, total, addings: list, buyings: list):
     # 1ミリ秒に生産できる椅子の単位をミリ椅子とする
-    total_milli_isu : int = 0
+    total_milli_isu : int = total
     total_power : int = 0
 
     item_power = {itemID: 0 for itemID in mitems}  # ItemID: power
@@ -256,6 +257,7 @@ def add_isu(room_name: str, req_time: int, num_isu: int) -> bool:
         return False
 
     room = get_room(room_name)
+
     for i, a in enumerate(room.addings):
         if a.time == req_time:
             a = a._replace(isu=a.isu + num_isu)
@@ -287,7 +289,8 @@ def buy_item(room_name: str, req_time: int, item_id: int, count_bought: int) -> 
                      room_name, item_id, count_bought)
         return False
 
-    total_milli_isu = sum(a.isu for a in room.addings)
+    total_milli_isu = room.total_added
+    total_milli_isu += sum(a.isu for a in room.addings)
     total_milli_isu *= 1000
 
     buyings = room.buyings
@@ -320,7 +323,20 @@ def get_status(room_name: str, t0=None) -> dict:
     if room_name not in _status_cache or _status_cache[room_name][0] < t0:
         current_time = update_room_time(room_name, 0)
         room = get_room(room_name)
-        status = calc_status(current_time, _m_items, room.addings, room.buyings)
+
+        addings = []
+        total_added = room.total_added
+
+        for a in room.addings:
+            if a.time <= current_time:
+                total_added += a.isu
+            else:
+                addings.append(a)
+
+        room.addings = addings
+        room.total_added = total_added
+
+        status = calc_status(current_time, _m_items, total_added*1000, room.addings, room.buyings)
         status = status._replace(time=get_current_time())
         status = simplejson.dumps(status)
         _status_cache[room_name] = (current_time, status)

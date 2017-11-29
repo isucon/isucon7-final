@@ -7,7 +7,12 @@ import urllib.parse
 from aiohttp import web
 
 import game
+import os
 
+
+WS_HOSTS = os.environ.get('ISU_WS_HOSTS')
+if WS_HOSTS:
+    WS_HOSTS = WS_HOSTS.split(',')
 
 public_dir = (Path(__file__) / '../../public').resolve()
 
@@ -23,7 +28,11 @@ async def index_handler(request):
 
 async def room_handler(request):
     room_name = request.match_info.get('room_name', '')
-    res = {"host": "", "path": "/ws/" + urllib.parse.quote(room_name)}
+    host = ""
+    if WS_HOSTS:
+        host = WS_HOSTS[sum(ord(x) for x in room_name) % len(WS_HOSTS)]
+
+    res = {"host": host, "path": "/ws/" + urllib.parse.quote(room_name)}
     return web.json_response(res)
 
 
@@ -44,7 +53,12 @@ def main():
     app.router.add_get("/ws/", game_handler)
     app.router.add_get('/', index_handler)
     app.router.add_static('/', path=public_dir, name="static")
-    web.run_app(app, host='0.0.0.0', port=5000)
+
+    if 'PORT' in os.environ:
+        port = int(os.environ['PORT'])
+    else:
+        port = 5000
+    web.run_app(app, host='0.0.0.0', port=port)
 
 
 if __name__ == '__main__':

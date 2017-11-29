@@ -311,12 +311,22 @@ def get_current_time() -> int:
     return int(time.time() * 1000)
 
 
-def get_status(room_name: str) -> dict:
-    current_time = update_room_time(room_name, 0)
-    room = get_room(room_name)
-    status = calc_status(current_time, _m_items, room.addings, room.buyings)
-    # calcStatusに時間がかかる可能性があるので タイムスタンプを取得し直す
-    status = status._replace(time=get_current_time())
+_status_cache = {}
+
+def get_status(room_name: str, t0=None) -> dict:
+    if t0 is None:
+        t0 = get_current_time() - 200
+
+    if room_name not in _status_cache or _status_cache[room_name][0] < t0:
+        current_time = update_room_time(room_name, 0)
+        room = get_room(room_name)
+        status = calc_status(current_time, _m_items, room.addings, room.buyings)
+        status = status._replace(time=get_current_time())
+        status = simplejson.dumps(status)
+        _status_cache[room_name] = (current_time, status)
+    else:
+        status = _status_cache[room_name][1]
+
     return status
 
 
@@ -325,7 +335,7 @@ async def serve(ws: 'aiohttp.web.WebSocketResponse', room_name: str):
 
     status = get_status(room_name)
     last_status_time = time.time()
-    await ws.send_json(status, dumps=simplejson.dumps)
+    await ws.send_str(status)
 
     while not ws.closed:
         # 0.5 秒ごとに status を送る
@@ -333,7 +343,7 @@ async def serve(ws: 'aiohttp.web.WebSocketResponse', room_name: str):
         if timeout < 0:
             status = get_status(room_name)
             last_status_time = time.time()
-            await ws.send_json(status, dumps=simplejson.dumps)
+            await ws.send_str(status)
             continue
 
         try:
@@ -341,7 +351,7 @@ async def serve(ws: 'aiohttp.web.WebSocketResponse', room_name: str):
         except asyncio.TimeoutError:
             continue
 
-        print(f"received request: {request}")
+        #print(f"received request: {request}")
         request_id: int = int(request["request_id"])
         action: str = str(request["action"])
         reqtime: int = int(request["time"])
@@ -361,9 +371,11 @@ async def serve(ws: 'aiohttp.web.WebSocketResponse', room_name: str):
             return
 
         if success:
-            status = get_status(room_name)
+            t = get_current_time()
+            await asyncio.sleep(0.2)  # get_status() を他のリクエストとまとめる
+            status = get_status(room_name, t)
             last_status_time = time.time()
-            await ws.send_json(status, dumps=simplejson.dumps)
+            await ws.send_str(status)
         #else:
         #    print(f"fail: request={request}")
 

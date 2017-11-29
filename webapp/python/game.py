@@ -1,5 +1,6 @@
 import asyncio
 from collections import defaultdict, namedtuple
+from functools import lru_cache
 import logging
 import os
 import sys
@@ -8,7 +9,6 @@ import time
 # namedtuple を dict として出力するために標準ライブラリの json ではなく
 # simplejson を使います。
 import simplejson
-import MySQLdb
 
 
 # types for JSON
@@ -21,39 +21,29 @@ Adding = namedtuple("Adding", ("time", "isu"))
 Buying = namedtuple("Buying", ("item_id", "ordinal", "time"))
 
 
-_db_info = None
+class Room:
+    def __init__(self, name):
+        self.name = name
+        self.time = 0
+        self.status = None
+        self.addings = []
+        self.buyings = []
 
-def connect_db():
-    """MySQLに接続して connection object を返す"""
-    global _db_info
-    if _db_info is None:
-        host = os.environ.get("ISU_DB_HOST", "127.0.0.1")
-        port = int(os.environ.get("ISU_DB_PORT", "3306"))
-        user = os.environ.get("ISU_DB_USER", "root")
-        passwd = os.environ.get("ISU_DB_PASSWORD", "")
-        _db_info = {
-            "host": host,
-            "port": port,
-            "user": user,
-            "password": passwd,
-            "charset": "utf8mb4",
-            "db": "isudb",
-        }
-    return MySQLdb.connect(**_db_info)
+
+_rooms = {}  # TODO: 永続化
+
+def get_room(name):
+    try:
+        return _rooms[name]
+    except KeyError:
+        r = Room(name)
+        _rooms[name] = r
+        return r
 
 
 def initialize():
-    conn = connect_db()
-    try:
-        cur = conn.cursor()
-        cur.execute("TRUNCATE TABLE adding")
-        cur.execute("TRUNCATE TABLE buying")
-        cur.execute("TRUNCATE TABLE room_time")
-    finally:
-        conn.close()
+    _rooms.clear()
 
-
-from functools import lru_cache
 
 @lru_cache(100000)
 def _calc_item_status(a, b, c, d, count):
@@ -221,7 +211,7 @@ def calc_status(current_time: int, mitems: dict, addings: list, buyings: list):
             bought = i
         del waiting_on_sale[:bought]
 
-    gs_addings = list(adding_at.values())
+    gs_addings = [Adding(a.time, str(a.isu)) for a in adding_at.values()]
 
     gs_items = [
         Item(
@@ -243,155 +233,97 @@ def calc_status(current_time: int, mitems: dict, addings: list, buyings: list):
         gs_on_sale)
 
 
-def update_room_time(conn, room_name: str, req_time: int) -> int:
-    """部屋のロックを取りタイムスタンプを更新する
+def update_room_time(room_name: str, req_time: int) -> int:
+    room = get_room(room_name)
+    current_time = get_current_time()
 
-    トランザクション開始後この関数を呼ぶ前にクエリを投げると、
-    そのトランザクション中の通常のSELECTクエリが返す結果がロック取得前の
-    状態になることに注意 (keyword: MVCC, repeatable read).
-    """
-    cur = conn.cursor()
-
-    # See page 13 and 17 in https://www.slideshare.net/ichirin2501/insert-51938787
-    cur.execute("INSERT INTO room_time(room_name, time) VALUES (%s, 0) ON DUPLICATE KEY UPDATE time = time",
-                (room_name,))
-
-    cur.execute("SELECT time FROM room_time WHERE room_name = %s FOR UPDATE", (room_name,))
-    room_time = cur.fetchone()[0]
-
-    current_time = get_current_time(conn)
-
-    if room_time > current_time:
+    if room.time > current_time:
         raise RuntimeError(f"room_time is future: room_time={room_time}, req_time={req_time}")
 
     if req_time and req_time < current_time:
         raise RuntimeError(f"req_time is past: req_time={req_time}, current_time={current_time}")
 
-    cur.execute("UPDATE room_time SET time = %s WHERE room_name = %s", (current_time, room_name))
+    room.time = current_time
     return current_time
 
 
 def add_isu(room_name: str, req_time: int, num_isu: int) -> bool:
     #print(f"add_isu(room_name={room_name}, req_time={req_time})")
-    conn = connect_db()
     try:
-        update_room_time(conn, room_name, req_time)
-        cur = conn.cursor()
-        cur.execute("INSERT INTO adding(room_name, time, isu) VALUES (%s, %s, '0') ON DUPLICATE KEY UPDATE isu=isu",
-                    (room_name, req_time))
-
-        cur.execute("SELECT isu FROM adding WHERE room_name = %s AND time = %s FOR UPDATE",
-                    (room_name, req_time))
-        isu = int(cur.fetchone()[0])
-        isu += num_isu
-        isu = str(isu)
-        cur.execute("UPDATE adding SET isu=%s WHERE room_name=%s AND time=%s",
-                    (isu, room_name, req_time))
-    except Exception as e:
-        conn.rollback()
+        update_room_time(room_name, req_time)
+    except RuntimeError:
         logging.exception("fail to add isu: room=%s time=%s isu=%s", room_name, req_time, num_isu)
         return False
+
+    room = get_room(room_name)
+    for i, a in enumerate(room.addings):
+        if a.time == req_time:
+            a = a._replace(isu=a.isu + num_isu)
+            room.addings[i] = a
+            break
     else:
-        conn.commit()
-        return True
-    finally:
-        conn.close()
+        room.addings.append(Adding(req_time, num_isu))
+
+    return True
 
 
 def buy_item(room_name: str, req_time: int, item_id: int, count_bought: int) -> bool:
-    #print(f"buy_item({room_name}, {req_time}, {item_id}, {count_bought})")
-    conn = connect_db()
     try:
-        update_room_time(conn, room_name, req_time)
-        cur = conn.cursor()
-        dcur = conn.cursor(MySQLdb.cursors.DictCursor)
-
-        cur.execute("SELECT COUNT(*) FROM buying WHERE room_name = %s AND item_id = %s",
-                    (room_name, item_id))
-        count_buying, = cur.fetchone()
-        if count_bought != count_buying:
-            conn.rollback()
-            logging.warn("item is already bought: room_name=%s, item_id=%s, count_bought=%s",
-                         room_name, item_id, count_bought)
-            return False
-
-        total_milli_isu = 0
-
-        cur.execute("SELECT isu FROM adding WHERE room_name = %s AND time <= %s",
-                    (room_name, req_time))
-        for (isu,) in cur:
-            total_milli_isu += int(isu) * 1000
-
-        cur.execute("SELECT item_id, ordinal, time FROM buying WHERE room_name = %s", (room_name,))
-        buyings = cur.fetchall()
-        for (buy_item_id, ordinal, item_time) in buyings:
-            dcur.execute("SELECT * FROM m_item WHERE item_id=%s", (buy_item_id,))
-            mitem = dcur.fetchone()
-            cost = calc_item_price(mitem, ordinal)
-            total_milli_isu -= cost * 1000
-            if item_time < req_time:
-                power = calc_item_power(mitem, ordinal)
-                total_milli_isu += power * (req_time - item_time)
-
-        dcur.execute("SELECT * FROM m_item WHERE item_id=%s", (item_id,))
-        mitem = dcur.fetchone()
-        cost = calc_item_price(mitem, count_bought+1) * 1000
-        if total_milli_isu < cost:
-            conn.rollback()
-            logging.info("isu not enough")
-            return False
-
-        cur.execute("INSERT INTO buying(room_name, item_id, ordinal, time) VALUES(%s, %s, %s, %s)",
-                    (room_name, item_id, count_bought+1, req_time))
-    except Exception as e:
-        conn.rollback()
-        logging.exception("fail to buy item id=%s, bought=%d, time=%s", item_id, count_bought, req_time)
+        update_room_time(room_name, req_time)
+    except RuntimeError:
+        logging.exception("fail to buy isu")
         return False
-    else:
-        conn.commit()
-        return True
-    finally:
-        conn.close()
+
+    room = get_room(room_name)
+
+    #TODO: カウンタを別に持つ
+    count_buying = 0
+    for b in room.buyings:
+        if b.item_id == item_id:
+            count_buying += 1
+
+    if count_bought != count_buying:
+        logging.warn("item is already bought: room_name=%s, item_id=%s, count_bought=%s",
+                     room_name, item_id, count_bought)
+        return False
+
+    total_milli_isu = sum(a.isu for a in room.addings)
+    total_milli_isu *= 1000
+
+    buyings = room.buyings
+    for (buy_item_id, ordinal, item_time) in buyings:
+        cost = calc_item_price(_m_items[buy_item_id], ordinal)
+        total_milli_isu -= cost * 1000
+        if item_time < req_time:
+            power = calc_item_power(_m_items[buy_item_id], ordinal)
+            total_milli_isu += power * (req_time - item_time)
+
+    cost = calc_item_price(_m_items[item_id], count_bought+1) * 1000
+    if total_milli_isu < cost:
+        logging.info("isu not enough")
+        return False
+
+    room.buyings.append(Buying(item_id, count_bought+1, req_time))
+    return True
 
 
-def get_current_time(conn) -> int:
-    cur = conn.cursor()
-    cur.execute("SELECT floor(unix_timestamp(current_timestamp(3))*1000)")
-    t, = cur.fetchone()
-    return t
+def get_current_time() -> int:
+    return int(time.time() * 1000)
 
 
 def get_status(room_name: str) -> dict:
-    conn = connect_db()
-    try:
-        current_time = update_room_time(conn, room_name, 0)
-
-        dcur = conn.cursor(MySQLdb.cursors.DictCursor)
-        dcur.execute("SELECT * FROM m_item")
-        mitems = {m["item_id"]: m for m in dcur}
-        dcur.close()
-
-        cur = conn.cursor()
-        cur.execute("SELECT time, isu FROM adding WHERE room_name=%s", (room_name,))
-        addings = [Adding(t, i) for (t, i) in cur]
-
-        cur.execute("SELECT item_id, ordinal, time FROM buying WHERE room_name=%s", (room_name,))
-        buyings = [Buying(i, o, t) for (i, o, t) in cur]
-
-        conn.commit()
-
-        status = calc_status(current_time, mitems, addings, buyings)
-        # calcStatusに時間がかかる可能性があるので タイムスタンプを取得し直す
-        status = status._replace(time=get_current_time(conn))
-        return status
-    finally:
-        conn.close()
+    current_time = update_room_time(room_name, 0)
+    room = get_room(room_name)
+    status = calc_status(current_time, _m_items, room.addings, room.buyings)
+    # calcStatusに時間がかかる可能性があるので タイムスタンプを取得し直す
+    status = status._replace(time=get_current_time())
+    return status
 
 
 async def serve(ws: 'aiohttp.web.WebSocketResponse', room_name: str):
     loop = asyncio.get_event_loop()
 
-    status: dict = await loop.run_in_executor(None, get_status, room_name)
+    status = get_status(room_name)
     last_status_time = time.time()
     await ws.send_json(status, dumps=simplejson.dumps)
 
@@ -399,7 +331,7 @@ async def serve(ws: 'aiohttp.web.WebSocketResponse', room_name: str):
         # 0.5 秒ごとに status を送る
         timeout = (last_status_time + 0.5) - time.time()
         if timeout < 0:
-            status: dict = await loop.run_in_executor(None, get_status, room_name)
+            status = get_status(room_name)
             last_status_time = time.time()
             await ws.send_json(status, dumps=simplejson.dumps)
             continue
@@ -416,20 +348,20 @@ async def serve(ws: 'aiohttp.web.WebSocketResponse', room_name: str):
 
         if action == "addIsu":
             # クライアントからは isu は文字列で送られてくる
-            success = await loop.run_in_executor(None, add_isu, room_name, reqtime, int(request["isu"]))
+            success = add_isu(room_name, reqtime, int(request['isu']))
         elif action == "buyItem":
             # count bought はその item_id がすでに買われている数.
             # count bought+1 個目を新たに買うことになる
             item_id = int(request["item_id"])
             count_bought = int(request["count_bought"])
-            success = await loop.run_in_executor(None, buy_item, room_name, reqtime, item_id, count_bought)
+            success = buy_item(room_name, reqtime, item_id, count_bought)
         else:
             print(f"Invalid action: {action}")
             await ws.close()
             return
 
         if success:
-            status = await loop.run_in_executor(None, get_status, room_name)
+            status = get_status(room_name)
             last_status_time = time.time()
             await ws.send_json(status, dumps=simplejson.dumps)
         #else:

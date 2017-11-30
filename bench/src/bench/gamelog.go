@@ -127,7 +127,8 @@ func getLatestStatus(statusList []*GameStatusLog, t1 time.Time, t2 time.Time) *G
 	idx := -1
 	var t int64
 	for i, x := range statusList {
-		if t1.Before(x.ClientTime) && x.ClientTime.Before(t2) {
+		// t1 <= x.ClientTime <= t2
+		if x.ClientTime.Sub(t1) >= 0 && t2.Sub(x.ClientTime) >= 0 {
 			if idx < 0 || x.Schedule[0].Time >= t {
 				t = x.Schedule[0].Time
 				idx = i

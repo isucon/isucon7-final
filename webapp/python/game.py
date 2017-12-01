@@ -102,15 +102,29 @@ for row in _m_items_dump:
     }
 
 
+@lru_cache(100000)
+def exp10n(n):
+    return 10**n
+
+
 # JSON中で利用する10進指数表記
 # [x, y] = x * 10^y
 def int2exp(x: int) -> (int, int):
-    s = str(x)
-    if not s:
+    if not x:
         return (0, 0)
+
+    b = x.bit_length()
+    d = b // 10 * 3
+    e = d - 17
+    k = 0
+    if e > 0:
+        k = e
+        x //= exp10n(e)
+
+    s = str(x)
     if len(s) <= 15:
-        return (x, 0)
-    return (int(s[:15]), len(s)-15)
+        return (x, k)
+    return (int(s[:15]), len(s)-15+k)
 
 
 def calc_status(current_time: int, mitems: dict, total, addings: list, buyings: list):

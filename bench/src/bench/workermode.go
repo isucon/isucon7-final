@@ -26,7 +26,7 @@ var (
 	groupName  = os.Getenv("ISU7_GROUP_NAME")
 	errNoJob   = errors.New("No task:" + groupName)
 	nodeName   = "unknown"
-	pathPrefix = "inDXkQeSMCBT4usHum4ok4XhYSP0qmKe/"
+	pathPrefix = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/"
 )
 
 func updateNodeName() {

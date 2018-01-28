@@ -1,5 +1,8 @@
 all: build
 
+deps:
+	gb vendor restore
+
 src/portal/bindata.go: views/*.tmpl static/*
 	go-bindata  -pkg portal -o src/portal/bindata.go $^
 

@@ -24,8 +24,8 @@ sudo apt update
 sudo apt install -y mysql-server nginx
 sudo apt install -y git curl libreadline-dev zlibc pkg-config autoconf automake build-essential libmysqlclient-dev \
 	libssl-dev python3 python3-dev python3-venv openjdk-8-jdk-headless libxml2-dev libcurl4-openssl-dev \
-    libxslt1-dev re2c bison libbz2-dev gettext libgettextpo-dev libicu-dev \
-	libmhash-dev libmcrypt-dev libgd-dev libtidy-dev libgmp-dev build-essential
+    libxslt1-dev re2c bison libbz2-dev libssl-dev gettext libgettextpo-dev libicu-dev libmhash-dev \
+	libmcrypt-dev libgd-dev libtidy-dev libgmp-dev
 ```
 
 ### このリポジトリのチェックアウト

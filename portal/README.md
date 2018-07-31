@@ -16,7 +16,7 @@ files/portalのファイルを配置
 
 nginx.confはmax_client_body_sizeの設定がある
 ```sh
-sudo cp files/portal/nginx.conf /etc/nginx/sites-available/default
+sudo cp files/portal.nginx.conf /etc/nginx/sites-available/default
 sudo cp files/portal.day* /etc/systemd/system/
 ```
 

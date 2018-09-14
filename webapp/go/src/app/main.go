@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-redis/redis"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -16,7 +17,8 @@ import (
 )
 
 var (
-	db *sqlx.DB
+	db     *sqlx.DB
+	client redis.Client
 )
 
 func initDB() {
@@ -54,6 +56,14 @@ func initDB() {
 	db.SetMaxOpenConns(20)
 	db.SetConnMaxLifetime(5 * time.Minute)
 	log.Printf("Succeeded to connect db.")
+
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+	pong, err := client.Ping().Result()
+	fmt.Println(pong, err)
 }
 
 func getInitializeHandler(w http.ResponseWriter, r *http.Request) {

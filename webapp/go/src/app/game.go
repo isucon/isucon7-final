@@ -13,6 +13,21 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+var mItems = map[int]mItem{
+	 1:{  1,     0,     1,     0,  1,     0,    1,    1,  1},
+	 2:{  2,     0,     1,     1,  1,     0,    1,    2,  1},
+	 3:{  3,     1,    10,     0,  2,     1,    3,    1,  2},
+	 4:{  4,     1,    24,     1,  2,     1,   10,    0,  3},
+	 5:{  5,     1,    25,   100,  3,     2,   20,   20,  2},
+	 6:{  6,     1,    30,   147, 13,     1,   22,   69, 17},
+	 7:{  7,     5,    80,   128,  6,     6,   61,  200,  5},
+	 8:{  8,    20,   340,   180,  3,     9,  105,  134, 14},
+	 9:{  9,    55,   520,   335,  5,    48,  243,  600,  7},
+	10:{ 10,   157,  1071,  1700, 12,   157,  625, 1000, 13},
+	11:{ 11,  2000,  7500,  2600,  3,  2001, 5430, 1000,  3},
+	12:{ 12,  1000,  9000,     0, 17,   963, 7689,    1, 19},
+	13:{ 13, 11000, 11000, 11000, 23, 10000,    2,    2, 29}}
+
 type GameRequest struct {
 	RequestID int    `json:"request_id"`
 	Action    string `json:"action"`
@@ -293,8 +308,9 @@ func buyItem(roomName string, itemID int, countBought int, reqTime int64) bool {
 		return false
 	}
 	for _, b := range buyings {
-		var item mItem
-		tx.Get(&item, "SELECT * FROM m_item WHERE item_id = ?", b.ItemID)
+		// var item mItem
+		// tx.Get(&item, "SELECT * FROM m_item WHERE item_id = ?", b.ItemID)
+		item := mItems[b.ItemID]
 		cost := new(big.Int).Mul(item.GetPrice(b.Ordinal), big.NewInt(1000))
 		totalMilliIsu.Sub(totalMilliIsu, cost)
 		if b.Time <= reqTime {
@@ -303,8 +319,9 @@ func buyItem(roomName string, itemID int, countBought int, reqTime int64) bool {
 		}
 	}
 
-	var item mItem
-	tx.Get(&item, "SELECT * FROM m_item WHERE item_id = ?", itemID)
+	// var item mItem
+	// tx.Get(&item, "SELECT * FROM m_item WHERE item_id = ?", itemID)
+	item := mItems[itemID]
 	need := new(big.Int).Mul(item.GetPrice(countBought+1), big.NewInt(1000))
 	if totalMilliIsu.Cmp(need) < 0 {
 		log.Println("not enough")
@@ -339,16 +356,16 @@ func getStatus(roomName string) (*GameStatus, error) {
 		return nil, fmt.Errorf("updateRoomTime failure")
 	}
 
-	mItems := map[int]mItem{}
-	var items []mItem
-	err = tx.Select(&items, "SELECT * FROM m_item")
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-	for _, item := range items {
-		mItems[item.ItemID] = item
-	}
+	// mItems := map[int]mItem{}
+	// var items []mItem
+	// err = tx.Select(&items, "SELECT * FROM m_item")
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return nil, err
+	// }
+	// for _, item := range items {
+	// 	mItems[item.ItemID] = item
+	// }
 
 	addings := []Adding{}
 	err = tx.Select(&addings, "SELECT time, isu FROM adding WHERE room_name = ?", roomName)

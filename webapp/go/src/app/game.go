@@ -13,6 +13,21 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+var mItems = map[int]mItem{
+	 1:{  1,     0,     1,     0,  1,     0,    1,    1,  1},
+	 2:{  2,     0,     1,     1,  1,     0,    1,    2,  1},
+	 3:{  3,     1,    10,     0,  2,     1,    3,    1,  2},
+	 4:{  4,     1,    24,     1,  2,     1,   10,    0,  3},
+	 5:{  5,     1,    25,   100,  3,     2,   20,   20,  2},
+	 6:{  6,     1,    30,   147, 13,     1,   22,   69, 17},
+	 7:{  7,     5,    80,   128,  6,     6,   61,  200,  5},
+	 8:{  8,    20,   340,   180,  3,     9,  105,  134, 14},
+	 9:{  9,    55,   520,   335,  5,    48,  243,  600,  7},
+	10:{ 10,   157,  1071,  1700, 12,   157,  625, 1000, 13},
+	11:{ 11,  2000,  7500,  2600,  3,  2001, 5430, 1000,  3},
+	12:{ 12,  1000,  9000,     0, 17,   963, 7689,    1, 19},
+	13:{ 13, 11000, 11000, 11000, 23, 10000,    2,    2, 29}}
+
 type GameRequest struct {
 	RequestID int    `json:"request_id"`
 	Action    string `json:"action"`
@@ -293,8 +308,9 @@ func buyItem(roomName string, itemID int, countBought int, reqTime int64) bool {
 		return false
 	}
 	for _, b := range buyings {
-		var item mItem
-		tx.Get(&item, "SELECT * FROM m_item WHERE item_id = ?", b.ItemID)
+		// var item mItem
+		// tx.Get(&item, "SELECT * FROM m_item WHERE item_id = ?", b.ItemID)
+		item := mItems[b.ItemID]
 		cost := new(big.Int).Mul(item.GetPrice(b.Ordinal), big.NewInt(1000))
 		totalMilliIsu.Sub(totalMilliIsu, cost)
 		if b.Time <= reqTime {
@@ -303,8 +319,9 @@ func buyItem(roomName string, itemID int, countBought int, reqTime int64) bool {
 		}
 	}
 
-	var item mItem
-	tx.Get(&item, "SELECT * FROM m_item WHERE item_id = ?", itemID)
+	// var item mItem
+	// tx.Get(&item, "SELECT * FROM m_item WHERE item_id = ?", itemID)
+	item := mItems[itemID]
 	need := new(big.Int).Mul(item.GetPrice(countBought+1), big.NewInt(1000))
 	if totalMilliIsu.Cmp(need) < 0 {
 		log.Println("not enough")
@@ -339,16 +356,16 @@ func getStatus(roomName string) (*GameStatus, error) {
 		return nil, fmt.Errorf("updateRoomTime failure")
 	}
 
-	mItems := map[int]mItem{}
-	var items []mItem
-	err = tx.Select(&items, "SELECT * FROM m_item")
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-	for _, item := range items {
-		mItems[item.ItemID] = item
-	}
+	// mItems := map[int]mItem{}
+	// var items []mItem
+	// err = tx.Select(&items, "SELECT * FROM m_item")
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return nil, err
+	// }
+	// for _, item := range items {
+	// 	mItems[item.ItemID] = item
+	// }
 
 	addings := []Adding{}
 	err = tx.Select(&addings, "SELECT time, isu FROM adding WHERE room_name = ?", roomName)
@@ -387,8 +404,8 @@ func getStatus(roomName string) (*GameStatus, error) {
 func calcStatus(currentTime int64, mItems map[int]mItem, addings []Adding, buyings []Buying) (*GameStatus, error) {
 	var (
 		// 1ミリ秒に生産できる椅子の単位をミリ椅子とする
-		totalMilliIsu = big.NewInt(0)
-		totalPower    = big.NewInt(0)
+		totalMilliIsu = big.NewInt(0)        // 総椅子数?
+		totalPower    = big.NewInt(0)        // 現在の1ミリ秒あたりの椅子生産数?
 
 		itemPower    = map[int]*big.Int{}    // ItemID => Power
 		itemPrice    = map[int]*big.Int{}    // ItemID => Price
@@ -399,8 +416,8 @@ func calcStatus(currentTime int64, mItems map[int]mItem, addings []Adding, buyin
 		itemPower0   = map[int]Exponential{} // ItemID => currentTime における Power
 		itemBuilt0   = map[int]int{}         // ItemID => currentTime における BuiltCount
 
-		addingAt = map[int64]Adding{}   // Time => currentTime より先の Adding
-		buyingAt = map[int64][]Buying{} // Time => currentTime より先の Buying
+		addingAt = map[int64]Adding{}   // Time => currentTime より先の Adding  // addingsのなかで、まだ追加していないadding
+		buyingAt = map[int64][]Buying{} // Time => currentTime より先の Buying  // buyingsのなかで、まだ追加していないbuying
 	)
 
 	for itemID := range mItems {
@@ -409,34 +426,44 @@ func calcStatus(currentTime int64, mItems map[int]mItem, addings []Adding, buyin
 	}
 
 	for _, a := range addings {
-		// adding は adding.time に isu を増加させる
+		// 全てのadding履歴を走査する
 		if a.Time <= currentTime {
+			// 過去のadding履歴は、総椅子数に追加。これはDBに保存しておくことで高速化できそう
 			totalMilliIsu.Add(totalMilliIsu, new(big.Int).Mul(str2big(a.Isu), big.NewInt(1000)))
 		} else {
+			// 現在以降のadding履歴は、addingAtに記録してあとでシミュレーション
+			// addingAt[t] : 時間tに追加したadding
 			addingAt[a.Time] = a
 		}
 	}
 
 	for _, b := range buyings {
-		// buying は 即座に isu を消費し buying.time からアイテムの効果を発揮する
-		itemBought[b.ItemID]++
+		// 全てのbuying履歴を走査する
+		itemBought[b.ItemID]++         // アイテムの総購入数を計算。DBを活用したい
 		m := mItems[b.ItemID]
 		totalMilliIsu.Sub(totalMilliIsu, new(big.Int).Mul(m.GetPrice(b.Ordinal), big.NewInt(1000)))
+		// アイテムの値段分だけ、総椅子数を減少させる
 
 		if b.Time <= currentTime {
-			itemBuilt[b.ItemID]++
+			// 過去のbuying履歴
+			itemBuilt[b.ItemID]++            // すでに購入したアイテムの個数を計算。DBを活用したい。
 			power := m.GetPower(itemBought[b.ItemID])
 			totalMilliIsu.Add(totalMilliIsu, new(big.Int).Mul(power, big.NewInt(currentTime-b.Time)))
+			// 購入したアイテムのpower x 購入してから現在までの時間 を総椅子数に加算。DBを活用したい。
 			totalPower.Add(totalPower, power)
+			// すでに購入したアイテムの総powerを計算。DBを活用したい。
 			itemPower[b.ItemID].Add(itemPower[b.ItemID], power)
+			// アイテムごとのpowerを計算。DBを活用したい。
 		} else {
+			// 現在以降のbuying履歴を走査。buyingAtに記録してあとでシミュレーション
 			buyingAt[b.Time] = append(buyingAt[b.Time], b)
 		}
 	}
 
 	for _, m := range mItems {
-		itemPower0[m.ItemID] = big2exp(itemPower[m.ItemID])
-		itemBuilt0[m.ItemID] = itemBuilt[m.ItemID]
+		// 全てのアイテムの種類を走査。
+		itemPower0[m.ItemID] = big2exp(itemPower[m.ItemID]) // このアイテムによる現在のpower。DBを活用したい
+		itemBuilt0[m.ItemID] = itemBuilt[m.ItemID]          // このアイテムの現在の個数。DBを活用したい。
 		price := m.GetPrice(itemBought[m.ItemID] + 1)
 		itemPrice[m.ItemID] = price
 		if 0 <= totalMilliIsu.Cmp(new(big.Int).Mul(price, big.NewInt(1000))) {
@@ -454,7 +481,7 @@ func calcStatus(currentTime int64, mItems map[int]mItem, addings []Adding, buyin
 
 	// currentTime から 1000 ミリ秒先までシミュレーションする
 	for t := currentTime + 1; t <= currentTime+1000; t++ {
-		totalMilliIsu.Add(totalMilliIsu, totalPower)
+		totalMilliIsu.Add(totalMilliIsu, totalPower) // 総椅子数にtotalPowerを追加。
 		updated := false
 
 		// 時刻 t で発生する adding を計算する
@@ -470,10 +497,10 @@ func calcStatus(currentTime int64, mItems map[int]mItem, addings []Adding, buyin
 			for _, b := range buyingAt[t] {
 				m := mItems[b.ItemID]
 				updatedID[b.ItemID] = true
-				itemBuilt[b.ItemID]++
+				itemBuilt[b.ItemID]++               // 椅子の総購入数に加算。
 				power := m.GetPower(b.Ordinal)
-				itemPower[b.ItemID].Add(itemPower[b.ItemID], power)
-				totalPower.Add(totalPower, power)
+				itemPower[b.ItemID].Add(itemPower[b.ItemID], power)  // 椅子の総powerに加算。
+				totalPower.Add(totalPower, power)   // 総powerに加算。
 			}
 			for id := range updatedID {
 				itemBuilding[id] = append(itemBuilding[id], Building{
@@ -502,6 +529,7 @@ func calcStatus(currentTime int64, mItems map[int]mItem, addings []Adding, buyin
 			}
 		}
 	}
+	// シミュレーション終了
 
 	gsAdding := []Adding{}
 	for _, a := range addingAt {

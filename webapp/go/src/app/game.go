@@ -147,15 +147,6 @@ func big2exp(n *big.Int) Exponential {
 	return Exponential{t, int64(len(s) - 15)}
 }
 
-func getCurrentTime() (int64, error) {
-	var currentTime int64
-	err := db.Get(&currentTime, "SELECT floor(unix_timestamp(current_timestamp(3))*1000)")
-	if err != nil {
-		return 0, err
-	}
-	return currentTime, nil
-}
-
 // 部屋のロックを取りタイムスタンプを更新する
 //
 // トランザクション開始後この関数を呼ぶ前にクエリを投げると、
@@ -176,12 +167,8 @@ func updateRoomTime(tx *sqlx.Tx, roomName string, reqTime int64) (int64, bool) {
 		return 0, false
 	}
 
-	var currentTime int64
-	err = tx.Get(&currentTime, "SELECT floor(unix_timestamp(current_timestamp(3))*1000)")
-	if err != nil {
-		log.Println(err)
-		return 0, false
-	}
+	currentTime := int64(time.Now().UnixNano() / 1000000)
+
 	if roomTime > currentTime {
 		log.Println("room time is future")
 		return 0, false
@@ -375,11 +362,7 @@ func getStatus(roomName string) (*GameStatus, error) {
 	}
 
 	// calcStatusに時間がかかる可能性があるので タイムスタンプを取得し直す
-	latestTime, err := getCurrentTime()
-	if err != nil {
-		return nil, err
-	}
-
+	latestTime := int64(time.Now().UnixNano() / 1000000)
 	status.Time = latestTime
 	return status, err
 }
